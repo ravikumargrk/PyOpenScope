@@ -1,8 +1,8 @@
 # About
-Python code that runs on your PC or RPi, interacts with OpenScope MZ (by digilent) over WiFi
+Python (3.8) code that runs on your PC or RPi, interacts with OpenScope MZ (by digilent) over WiFi
 
 # Files
 ## driver.py 
 * Sets up parameters like sampling rate, sample size and number of acquisitins to be done and wait interval between the acquisitions
-* Script takes maxacqCount number of acuisition in different files.
+* Script takes maxacqCount number of acuisition in different files and saves it as CSV files.
 
