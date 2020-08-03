@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import json
 import pprint
+pp = pprint.PrettyPrinter(indent=4)
 import requests
 import time
 
@@ -14,14 +15,18 @@ import numpy
 omz_addr = 'http://10.0.0.15' # Change to openscope's hostname
 # boolean
 indicate_status = False
-testing = True
-awgfreq = 100 # Hz
+testing = True # connecg AWG 1 back to OSC 1.
+
+# setup instruments
+awgfreq = 100 # Hz # for testing
 oscfreq = 2000 # S/sec
 sample_size = 30000 # limit
 waitInterval = 20 # sec
-maxacqCount = 10 # no. of files
+maxacqCount = 10 # number of acquisitins to be done
+
 #status_broadcast_addr = 'http://10.0.0.16' # status indicator
-pp = pprint.PrettyPrinter(indent=4)
+
+
 
 #################################################
 # definitions
