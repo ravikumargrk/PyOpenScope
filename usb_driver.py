@@ -2,16 +2,19 @@
 # -*- coding: utf-8 -*-
 import json
 import pprint
-import requests
-import time
 
+import time
+import serial
 import re
 import numpy
 
 ###########################################################
 # SETUP
 
-omz_addr = 'http://10.0.0.15' # Change to openscope's hostname
+omz_addr = '/dev/ttyUSB0'
+omz_br   = 115200
+wait_for_response = 0.5
+omz_timeout = 2
 # boolean
 indicate_status = False
 testing = True
@@ -19,14 +22,36 @@ awgfreq = 100 # Hz
 oscfreq = 2000 # S/sec
 sample_size = 30000 # limit
 waitInterval = 20 # sec
-maxacqCount = 3 # no. of files
-#status_broadcast_addr = 'http://10.0.0.16' # status indicator
+maxacqCount = 10 # no. of files
+
 pp = pprint.PrettyPrinter(indent=4)
+omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
+
 
 #################################################
 # definitions
 def runjson(payload):
-    return requests.post(omz_addr, json=payload).json()
+    if not omz.is_open:
+        omz.open()
+    # flush ?
+    omz.write(json.dumps(payload).encode())
+    time.sleep(wait_for_response)
+    replystr = b''
+    while(omz.in_waiting > 0):
+        replystr += omz.read()
+    omz.close()
+    print(replystr)
+    return json.loads(replystr.decode())
+    
+runjson(
+    {
+        "device":[
+            {
+                "command":"resetInstruments"
+            }
+        ]
+    }
+)
 
 def printstatus(status_str):
     #if indicate_status:
@@ -38,8 +63,15 @@ def interrupt():
 
 def oscread(acqCount):
     payload = {'osc': {'1': [{'command': 'read', 'acqCount': acqCount}]}}
-    r = requests.post(omz_addr, json=payload)
-    result = re.split(b'\r\n',r.content)
+    if not omz.is_open:
+        omz.open()
+    omz.write(json.dumps(payload).encode())
+    time.sleep(wait_for_response)
+    replystr = b''
+    while(omz.in_waiting > 0):
+        replystr += omz.read()
+    omz.close()
+    result = re.split(b'\r\n',replystr)
     # Decode bytes, and convert single quotes to double quotes for valid JSON
     str_json = result[1].decode('ASCII').replace("'", '"')
     # Load the JSON to a Python list & pretty print formatted JSON
@@ -240,25 +272,13 @@ if testing:
     else:
         print('Testing case : AWG setup done')
 
-# [awg_state,osc_state,trg_state,acqCount_osc,acqCount_trg] = check()
-
-# printstatus('AWG state : ' + awg_state )
-# printstatus('OSC state : ' + osc_state )
-# printstatus('TRG state : ' + trg_state )
-# printstatus('acqCount_osc : ' + str(acqCount_osc) )
-# printstatus('acqCount_trg : ' + str(acqCount_trg) )
-
-# if ((osc_state=='idle') or (trg_state=='idle')):
-#     printstatus('Problem with OSC state')
-#     interrupt()
-
 ###########################################################
 # Main loop
 
 acqCount= 0
 while(acqCount < maxacqCount):
     while (True):
-        reply = requests.post(omz_addr, json=
+        reply = runjson(
             {
                 "trigger":{
                     "1":[
@@ -268,7 +288,7 @@ while(acqCount < maxacqCount):
                     ]
                 }
             }
-        ).json()
+        )
         if(reply['trigger']['1'][0]['statusCode']==0):
             acqCount = reply['trigger']['1'][0]['acqCount']
             printstatus('OSC triggered for AcqCount = ' + str(acqCount))
@@ -293,8 +313,9 @@ while(acqCount < maxacqCount):
     # Wait between two readings
     time.sleep(waitInterval) 
 
-###########################################################
+################################################
 # Reset device and end
+
 runjson(
     {
         "device":[

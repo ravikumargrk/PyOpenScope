@@ -1,32 +1,69 @@
 #!/bin/bash/python3
 # -*- coding: utf-8 -*-
+from os import mkdir
+from datetime import datetime
+now = datetime.now()
+dt_string = now.strftime("%d%m%Y%H%M%S")
+foldername = "data_" + dt_string
+mkdir(foldername)
+import numpy
 import json
 import pprint
-import requests
 import time
-
+import serial
 import re
-import numpy
 
 ###########################################################
 # SETUP
 
-omz_addr = 'http://10.0.0.15' # Change to openscope's hostname
+omz_addr = 'COM3'
+omz_br   = 115200
+wait_for_response = 0.5
+omz_timeout = 2
 # boolean
 indicate_status = False
 testing = True
 awgfreq = 100 # Hz
 oscfreq = 2000 # S/sec
 sample_size = 30000 # limit
-waitInterval = 20 # sec
+waitInterval = 10 # sec
 maxacqCount = 3 # no. of files
-#status_broadcast_addr = 'http://10.0.0.16' # status indicator
+
 pp = pprint.PrettyPrinter(indent=4)
+omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
+
 
 #################################################
 # definitions
 def runjson(payload):
-    return requests.post(omz_addr, json=payload).json()
+    if not omz.is_open:
+        omz.open()
+    # flush ?
+    omz.write(json.dumps(payload).encode())
+    time.sleep(wait_for_response)
+    replystr = b''
+    while(omz.in_waiting > 0):
+        replystr += omz.read()
+    omz.close()
+    replystr = replystr[replystr.find(b'{'):replystr.rfind(b'}')+1]
+    # print(replystr)
+    return json.loads(replystr.decode())
+    
+runjson(
+    {
+        "mode":"JSON"
+    }
+)
+
+runjson(
+    {
+        "device":[
+            {
+                "command":"resetInstruments"
+            }
+        ]
+    }
+)
 
 def printstatus(status_str):
     #if indicate_status:
@@ -37,38 +74,45 @@ def interrupt():
     exit()
 
 def oscread(acqCount):
+    # write command
     payload = {'osc': {'1': [{'command': 'read', 'acqCount': acqCount}]}}
-    r = requests.post(omz_addr, json=payload)
-    result = re.split(b'\r\n',r.content)
-    # Decode bytes, and convert single quotes to double quotes for valid JSON
+    if not omz.is_open:
+        omz.open()
+    omz.write(json.dumps(payload).encode())
+    time.sleep(wait_for_response)
+    # read reply
+    replystr = b''
+    while(omz.in_waiting > 0):
+        replystr += omz.read()
+    omz.close()
+    result = re.split(b'\r\n',replystr)
+
+    # convert single quotes to double quotes for valid JSON
     str_json = result[1].decode('ASCII').replace("'", '"')
-    # Load the JSON to a Python list & pretty print formatted JSON
     my_json = json.loads(str_json)
-    # pp.pprint(my_json)
+
     # data's in the 3rd chunk apparently
     data = result[3]
-    # in case you want to write binary file and convert later
-    if (False):
-        with open("filename.bin", "wb") as file:
-            for byte in data:
-                file.write(byte.to_bytes(1, byteorder='big'))
 
-    SampleFreq = my_json['osc']['1'][0]['actualSampleFreq']/1000
-
+    # write binary file and convert later
+    acqCount = my_json['osc']['1'][0]['acqCount']
+    sampleFreq = my_json['osc']['1'][0]['actualSampleFreq']/1000
+    filename = "AC" + str(acqCount) + "SR" + str(sampleFreq)
+    with open(foldername + "/" + filename + ".bin", "wb") as file:
+        for byte in data:
+            file.write(byte.to_bytes(1, byteorder='big'))
     mvolts=numpy.zeros(len(data)//2)
     for i in range(0, len(data)-2, 2):
         mvolts[i//2] = int.from_bytes(data[i:i+2], byteorder='little', signed=True)
 
     volts = mvolts / 1000
-    t = numpy.arange(len(volts)) / SampleFreq
+    t = numpy.arange(len(volts)) / sampleFreq
 
     if(len(t)==0):
         print("empty")
     else:
         a = numpy.asarray([ t, volts ])
-        numpy.savetxt('DataForAcqCount='+ str(acqCount) +'.csv', a, delimiter=",")
-        print('DataForAcqCount='+ str(acqCount) +'.csv'+' ... saved')
-
+        numpy.savetxt(foldername + "/" + filename +'.csv', a, delimiter=",")
 
 def check():
     reply = runjson(
@@ -240,25 +284,13 @@ if testing:
     else:
         print('Testing case : AWG setup done')
 
-# [awg_state,osc_state,trg_state,acqCount_osc,acqCount_trg] = check()
-
-# printstatus('AWG state : ' + awg_state )
-# printstatus('OSC state : ' + osc_state )
-# printstatus('TRG state : ' + trg_state )
-# printstatus('acqCount_osc : ' + str(acqCount_osc) )
-# printstatus('acqCount_trg : ' + str(acqCount_trg) )
-
-# if ((osc_state=='idle') or (trg_state=='idle')):
-#     printstatus('Problem with OSC state')
-#     interrupt()
-
 ###########################################################
 # Main loop
 
 acqCount= 0
 while(acqCount < maxacqCount):
     while (True):
-        reply = requests.post(omz_addr, json=
+        reply = runjson(
             {
                 "trigger":{
                     "1":[
@@ -268,10 +300,10 @@ while(acqCount < maxacqCount):
                     ]
                 }
             }
-        ).json()
+        )
         if(reply['trigger']['1'][0]['statusCode']==0):
             acqCount = reply['trigger']['1'][0]['acqCount']
-            printstatus('OSC triggered for AcqCount = ' + str(acqCount))
+            printstatus('Trigger armed for acqCount = ' + str(acqCount))
             break  
         else:
             # iterate
@@ -284,8 +316,8 @@ while(acqCount < maxacqCount):
         # Wait till osc is triggered.
         [awg_state,osc_state,trg_state,acqCount_osc,acqCount_trg] = check()
         if(osc_state=='triggered'):
-            printstatus('Data for Acqition count '+ str(acqCount_osc) + ' ..Acquring')
-            oscread(acqCount_osc)
+            printstatus('Data for Acqition count '+ str(acqCount_trg) + ' ..wiritng to disk')
+            oscread(acqCount_trg)
             break
         else:
             # iterate
@@ -293,8 +325,9 @@ while(acqCount < maxacqCount):
     # Wait between two readings
     time.sleep(waitInterval) 
 
-###########################################################
+################################################
 # Reset device and end
+
 runjson(
     {
         "device":[
