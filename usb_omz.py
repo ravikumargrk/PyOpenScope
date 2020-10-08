@@ -6,9 +6,8 @@ now = datetime.now()
 dt_string = now.strftime("%d%m%Y%H%M%S")
 foldername = "data_" + dt_string
 mkdir(foldername)
-import numpy
+
 import json
-import pprint
 import time
 import serial
 import re
@@ -16,8 +15,8 @@ import re
 ###########################################################
 # SETUP
 
-omz_addr = 'COM3'
-omz_br   = 115200
+omz_addr = 'COM9'
+omz_br   = 1000000
 wait_for_response = 0.5
 omz_timeout = 2
 # boolean
@@ -29,7 +28,6 @@ sample_size = 30000 # limit
 waitInterval = 10 # sec
 maxacqCount = 3 # no. of files
 
-pp = pprint.PrettyPrinter(indent=4)
 omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
 
 
@@ -101,18 +99,6 @@ def oscread(acqCount):
     with open(foldername + "/" + filename + ".bin", "wb") as file:
         for byte in data:
             file.write(byte.to_bytes(1, byteorder='big'))
-    mvolts=numpy.zeros(len(data)//2)
-    for i in range(0, len(data)-2, 2):
-        mvolts[i//2] = int.from_bytes(data[i:i+2], byteorder='little', signed=True)
-
-    volts = mvolts / 1000
-    t = numpy.arange(len(volts)) / sampleFreq
-
-    if(len(t)==0):
-        print("empty")
-    else:
-        a = numpy.asarray([ t, volts ])
-        numpy.savetxt(foldername + "/" + filename +'.csv', a, delimiter=",")
 
 def check():
     reply = runjson(
@@ -176,7 +162,7 @@ reply = runjson(
     }
 )
 
-if (len(reply['file'][0]['files']) >= 6):
+if (len(reply['file'][0]['files']) >= 5):
     # SD card mounted
     printstatus('All config files intact')
 else:
@@ -326,7 +312,7 @@ while(acqCount < maxacqCount):
     time.sleep(waitInterval) 
 
 ################################################
-# Reset device and end
+# Reset device and end transmission
 
 runjson(
     {
