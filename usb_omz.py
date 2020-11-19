@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 from os import mkdir
 from datetime import datetime
-now = datetime.now()
-dt_string = now.strftime("%d%m%Y%H%M%S")
-foldername = "data_" + dt_string
-mkdir(foldername)
 
 import json
 import time
@@ -15,21 +11,32 @@ import re
 ###########################################################
 # SETUP
 
-omz_addr = 'COM9'
-omz_br   = 1000000
+omz_addr = 'COM3'
+omz_br   = 1250000
 wait_for_response = 0.5
 omz_timeout = 2
 # boolean
 indicate_status = False
 testing = True
-awgfreq = 100 # Hz
-oscfreq = 2000 # S/sec
+awgfreq = 1000 # Hz
+
+vpp = 510
+vdc = 500
+trg_l = 400
+trg_h = 600
+signalstr = "sine"
+
+oscfreq = 20000 # S/sec
 sample_size = 30000 # limit
 waitInterval = 10 # sec
-maxacqCount = 3 # no. of files
+maxacqCount = 1 # no. of files
 
 omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
 
+now = datetime.now()
+dt_string = now.strftime("%d%m%Y%H%M%S")
+foldername = "data_" + dt_string
+mkdir(foldername)
 
 #################################################
 # definitions
@@ -83,6 +90,7 @@ def oscread(acqCount):
     while(omz.in_waiting > 0):
         replystr += omz.read()
     omz.close()
+    
     result = re.split(b'\r\n',replystr)
 
     # convert single quotes to double quotes for valid JSON
@@ -213,8 +221,8 @@ reply = runjson(
                         "instrument": "osc",
                         "channel": 1,
                         "type": "risingEdge",
-                        "lowerThreshold": 0,
-                        "upperThreshold": 500
+                        "lowerThreshold": trg_l,
+                        "upperThreshold": trg_h
                     },
                     "targets": {
                         "osc": [
@@ -241,10 +249,10 @@ if testing:
                 "1": [
                     {
                         "command": "setRegularWaveform",
-                        "signalType": "sine",
+                        "signalType": signalstr,
                         "signalFreq": awgfreq*1000,
-                        "vpp": 3000,
-                        "vOffset": 0
+                        "vpp": vpp,
+                        "vOffset": vdc
                     }
                 ]
             }
