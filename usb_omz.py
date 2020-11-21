@@ -316,17 +316,18 @@ while(acqCount < maxacqCount):
             break
         else:
             # iterate
-            reply = runjson(
-                {
-                    "trigger":{
-                        "1":[
-                            {
-                                "command":"forceTrigger"
-                            }
-                        ]
+            if force:
+                reply = runjson(
+                    {
+                        "trigger":{
+                            "1":[
+                                {
+                                    "command":"forceTrigger"
+                                }
+                            ]
+                        }
                     }
-                }
-            )
+                )
             time.sleep(0.5)
     # Wait between two readings
     time.sleep(waitInterval) 
