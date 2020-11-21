@@ -16,6 +16,7 @@ omz_br   = 1250000
 wait_for_response = 0.5
 omz_timeout = 2
 # boolean
+force = True
 indicate_status = False
 testing = True
 awgfreq = 1000 # Hz
@@ -315,6 +316,17 @@ while(acqCount < maxacqCount):
             break
         else:
             # iterate
+            reply = runjson(
+                {
+                    "trigger":{
+                        "1":[
+                            {
+                                "command":"forceTrigger"
+                            }
+                        ]
+                    }
+                }
+            )
             time.sleep(0.5)
     # Wait between two readings
     time.sleep(waitInterval) 
