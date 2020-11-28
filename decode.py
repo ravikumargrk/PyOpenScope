@@ -1,3 +1,5 @@
+# Decodes binary files created by usb_omz.py
+
 import csv
 import json
 

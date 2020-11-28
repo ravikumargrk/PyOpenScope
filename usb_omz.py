@@ -33,7 +33,7 @@ waitInterval = 10 # sec
 maxacqCount = 1 # no. of files
 
 omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
-omz.set_buffer_size(rx_size = 60500, tx_size = 12800)
+
 now = datetime.now()
 dt_string = now.strftime("%d%m%Y%H%M%S")
 foldername = "data_" + dt_string
@@ -80,10 +80,40 @@ def interrupt():
     exit()
 
 def oscread(acqCount):
+    payload = {'osc': {'1': [{'command': 'read', 'acqCount': acqCount}]}}
+    # open port
+    if not omz.is_open:
+        omz.open()
+    # write
+    omz.write(json.dumps(payload).encode())
+    # wait for response
+    time.sleep(wait_for_response)
+
+    # read
+    replystr = b''
+    while (omz.in_waiting > 0):
+        buffer = omz.read(128)
+        replystr += buffer
+    omz.close()
+
+    # Split
+    result = re.split(b'\r\n',replystr)
+    # Decode bytes, and convert single quotes to double quotes for valid JSON
+    reply_json = result[1].decode('ASCII').replace("'", '"')
+    # Get parameters
+    BinaryLength = reply_json['osc']['1'][0]['binaryLength']
+    acqCount = reply_json['osc']['1'][0]['acqCount']
+    sampleFreq = reply_json['osc']['1'][0]['actualSampleFreq']/1000
+
+    # data's in the 3rd chunk apparently
+    datastr = result[3]
+    return [BinaryLength, len(data)]
+
+def oscread2(acqCount):
     [BinaryLength,ActualBinaryLength] = [0,0]
     # write command
     payload = {'osc': {'1': [{'command': 'read', 'acqCount': acqCount}]}}
-    print(json.dumps(payload).encode())
+    
     if not omz.is_open:
         omz.open()
     omz.write(json.dumps(payload).encode())
