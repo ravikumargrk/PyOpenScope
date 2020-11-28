@@ -1,25 +1,38 @@
 # -*- coding: utf-8 -*-
-import requests
-import re
 import json
-import numpy
+import time
+import serial
+import re
 import pprint
 
-# url = 'http://localhost:42135'
-url = 'http://10.0.0.15'
+omz_addr = 'COM3'
+omz_br   = 1250000
+wait_for_response = 0.5
+omz_timeout = 2
 
+omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
 pp = pprint.PrettyPrinter(indent=4)
 
-# Finally Read
-payload = {'osc':{'1':[{'command':'read','acqCount': 0}]}}
-r = requests.post(url, json=payload)
-result = re.split(b'\r\n',r.content)
-# Decode bytes, and convert single quotes to double quotes for valid JSON
-str_json = result[1].decode('ASCII').replace("'", '"')
-# Load the JSON to a Python list & pretty print formatted JSON
-my_json = json.loads(str_json)
-pp.pprint(my_json)
+# write command
+payload = {'osc': {'1': [{'command': 'read', 'acqCount': 1}]}}
+if not omz.is_open:
+    omz.open()
+omz.write(json.dumps(payload).encode())
+time.sleep(wait_for_response)
+# read reply
+replystr = b''
+while(omz.in_waiting > 0):
+    byte = omz.read()
+    replystr += omz.read()
+omz.close()
 
+result = re.split(b'\r\n',replystr)
+
+# convert single quotes to double quotes for valid JSON
+str_json = result[1].decode('ASCII').replace("'", '"')
+my_json = json.loads(str_json)
+
+# data's in the 3rd chunk apparently
 data = result[3]
 
 if (False):

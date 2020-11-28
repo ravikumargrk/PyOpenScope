@@ -10,11 +10,11 @@ import re
 
 ###########################################################
 # SETUP
-
 omz_addr = 'COM3'
 omz_br   = 1250000
-wait_for_response = 0.5
+wait_for_response = 1
 omz_timeout = 2
+
 # boolean
 force = True
 indicate_status = False
@@ -27,13 +27,13 @@ trg_l = 400
 trg_h = 600
 signalstr = "sine"
 
-oscfreq = 20000 # S/sec
-sample_size = 30000 # limit
+oscfreq = 1000 # S/sec
+sample_size = 10000 # limit
 waitInterval = 10 # sec
 maxacqCount = 1 # no. of files
 
 omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
-
+omz.set_buffer_size(rx_size = 60500, tx_size = 12800)
 now = datetime.now()
 dt_string = now.strftime("%d%m%Y%H%M%S")
 foldername = "data_" + dt_string
@@ -80,35 +80,89 @@ def interrupt():
     exit()
 
 def oscread(acqCount):
+    [BinaryLength,ActualBinaryLength] = [0,0]
     # write command
     payload = {'osc': {'1': [{'command': 'read', 'acqCount': acqCount}]}}
+    print(json.dumps(payload).encode())
     if not omz.is_open:
         omz.open()
     omz.write(json.dumps(payload).encode())
     time.sleep(wait_for_response)
-    # read reply
+
+    # Read header
+    # format : <number>\r\n
+    header = b''
+    while( omz.in_waiting > 0 ):
+        if( (len(header) > 2) & (header[-2:] == b'\r\n') ):
+            break
+        byte = omz.read()
+        header += byte
+    # print(header)
+
+    # read reply json
     replystr = b''
-    while(omz.in_waiting > 0):
-        replystr += omz.read()
+    leftBraceCount = 0
+    rightBraceCount = 0
+    # while( omz.in_waiting > 0 ):
+    while( ( leftBraceCount != rightBraceCount ) | (leftBraceCount == 0) ):
+        byte = omz.read()
+        if(byte == b'{'):
+            leftBraceCount += 1
+        if(byte == b'}'):
+            rightBraceCount += 1
+        replystr += byte
+    # print(replystr)
+    # Extract parameters
+    reply_json = json.loads(replystr)
+    BinaryLength = reply_json['osc']['1'][0]['binaryLength']
+    acqCount = reply_json['osc']['1'][0]['acqCount']
+    sampleFreq = reply_json['osc']['1'][0]['actualSampleFreq']/1000
+
+    # Read secondary header
+    # format : \r\n<number>\r\n
+    header2 = b''
+    return_count = 0
+    # while( omz.in_waiting > 0 ):
+    while (return_count != 2):
+        byte = omz.read()
+        if byte==b'\n':
+            return_count += 1
+        header2 += byte
+    # print(header2)
+
+    # read data
+    # <BinaryLength size blob>
+    datastr = b''
+    # while( omz.in_waiting > 0 ):
+    while(len(datastr) < BinaryLength):
+        datastr += omz.read()
+    # print(datastr)
+
+    # read footer
+    # format : \r\n<number>\r\n\r\n
+    footer = b''
+    return_count = 0
+    # while( omz.in_waiting > 0 ):
+    while (return_count != 3):
+        byte = omz.read()
+        if byte==b'\n':
+            return_count += 1
+        footer += byte
+    # print(footer)
+
+    # Close communications with COM port
     omz.close()
-    
-    result = re.split(b'\r\n',replystr)
 
-    # convert single quotes to double quotes for valid JSON
-    str_json = result[1].decode('ASCII').replace("'", '"')
-    my_json = json.loads(str_json)
-
-    # data's in the 3rd chunk apparently
-    data = result[3]
-
-    # write binary file and convert later
-    acqCount = my_json['osc']['1'][0]['acqCount']
-    sampleFreq = my_json['osc']['1'][0]['actualSampleFreq']/1000
     filename = "AC" + str(acqCount) + "SR" + str(sampleFreq)
-    with open(foldername + "/" + filename + ".bin", "wb") as file:
-        for byte in data:
-            file.write(byte.to_bytes(1, byteorder='big'))
 
+    # # write binary file and convert later
+    with open(foldername + "/" + filename + ".bin", "wb") as file:
+        for byte in datastr:
+            file.write(byte.to_bytes(1, byteorder='big'))
+    
+    return len(header)+len(header2)+len(datastr)+len(footer)
+
+# check states and acquisition counts   
 def check():
     reply = runjson(
         {
@@ -311,9 +365,12 @@ while(acqCount < maxacqCount):
         # Wait till osc is triggered.
         [awg_state,osc_state,trg_state,acqCount_osc,acqCount_trg] = check()
         if(osc_state=='triggered'):
-            printstatus('Data for Acqition count '+ str(acqCount_trg) + ' ..wiritng to disk')
-            oscread(acqCount_trg)
+            printstatus('Data for Acqition count '+ str(acqCount_trg) + '...reading')
+            totb = oscread(acqCount_trg)
+            print('Total bytes received : ' + str(totb))
             break
+        if(osc_state=='acquiring'):
+            continue
         else:
             # iterate
             if force:

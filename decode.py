@@ -1,9 +1,6 @@
 import csv
 import json
 
-foldernames = ['data_22102020160959','data_22102020161252','data_22102020161353','data_22102020161444','data_22102020161618']
-filename = 'AC1SR20000.0.bin'
-
 def bin2dat(foldername,filename):
    try:
       fileobj = open(foldername + '/' + filename,'rb')
@@ -25,10 +22,11 @@ def bin2dat(foldername,filename):
    data = [ time, mvolts ]
    data = list(map(list,zip(*data)))
 
-   with open(foldername + '/' + filename[0:filename.index('.bin')] + '.csv', 'w') as f:
+   with open(foldername + '/' + filename[0:filename.index('.bin')] + '.csv', 'w',newline='') as f:
       writer = csv.writer(f)
       writer.writerows(data)
 
+   print(foldername+'\t'+filename+'\t'+str(len(data)))
 ##################################
 ####   JSON File Saving ####
 ##################################
@@ -55,5 +53,15 @@ def bin2dat(foldername,filename):
 
    # jsonfile.close()
 
-for foldername in foldernames:
-   bin2dat(foldername,filename)
+# Automate pick recent directory
+import os
+allfolders = [name for name in os.listdir() if os.path.isdir(name)]
+datafolders = [name for name in allfolders if name.startswith('data_')]
+
+print('foldername\tfilename\tdata')
+
+for folder in datafolders:
+   datafiles = [name for name in os.listdir(folder) if name.endswith('.bin')]
+   for datafile in datafiles:
+      if not os.path.isfile(folder + '/' + datafile[0:-3]+'csv'):
+         bin2dat(folder,datafile)
