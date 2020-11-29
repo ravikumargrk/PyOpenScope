@@ -15,13 +15,15 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 
 **Install my firmware**
 ```
-1. Download this file, Hold BTNP and press BTNR on device to go into bootloader mode
-
-2. Follow [This tutorial](https://reference.digilentinc.com/learn/instrumentation/tutorials/openscope-mz/update-firmware) and in "Available Firmware Versions" Select option "Others" to browse and pick downloaded file.
+1. Hold BTNP and press BTNR on device to go into bootloader mode
+2. Download OpenScope115200.hex 
+2. Follow [This tutorial](https://reference.digilentinc.com/learn/instrumentation/tutorials/openscope-mz/update-firmware)
+3. While step#2 In "Available Firmware Versions" Select option "Others" to browse and pick downloaded file.
 ```
 **Revert to Original Firmware**
 ```
-1. Follow [Digilent/openscope-mz](https://github.com/Digilent/openscope-mz) ReadMe file to revert back to original-compiled firmware using arduino. 
+0. Install Arduino 1.6.9
+1. Follow instrunctions at [Digilent/openscope-mz](https://github.com/Digilent/openscope-mz) markdown file
 2. Don't forget to put device in bootloader mode before arduino upload !
 ```
 
