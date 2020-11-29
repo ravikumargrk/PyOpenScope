@@ -22,6 +22,7 @@ omz_addr = '/dev/ttyUSB0'
 omz_br   = 115200
 wait_for_response = 1
 omz_timeout = 2
+buffersize = 4096
 
 # boolean
 force = True
@@ -107,7 +108,7 @@ def oscread(acqCount):
     # read
     replystr = b''
     while (omz.in_waiting > 0):
-        buffer = omz.read(128)
+        buffer = omz.read(buffersize)
         replystr += buffer
     omz.close()
     # Split
