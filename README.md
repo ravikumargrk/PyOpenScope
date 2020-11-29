@@ -13,7 +13,7 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
     * digilent-agent and wavesform live won't work as baud rate will be changed 
     * To reverse the process, see "Reverting to original firmware" below
 
-###Install my firmware
+### Install my firmware
 ```
 1. Hold BTNP and press BTNR on device to go into bootloader mode
 2. Download OpenScope115200.hex 
@@ -22,7 +22,7 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 ```
 [Update OpenScopeMZ firmware](https://reference.digilentinc.com/learn/instrumentation/tutorials/openscope-mz/update-firmware)
 
-###Revert to Original Firmware
+### Revert to Original Firmware
 ```
 0. Install Arduino 1.6.9
 1. Follow instrunctions at OpenScopeMZ source code github repository markdown 
