@@ -7,7 +7,10 @@ import json
 import time
 import serial
 import re
-
+import os
+import sys
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 ###########################################################
 # SETUP
 omz_addr = '/dev/ttyUSB0'
@@ -18,7 +21,7 @@ omz_timeout = 2
 # boolean
 force = True
 indicate_status = False
-testing = True
+testing = False
 awgfreq = 1000 # Hz
 
 vpp = 510
@@ -28,10 +31,10 @@ trg_h = 600
 signalstr = "sine"
 
 oscfreq = 1000 # S/sec
-sample_size = 30000 # limit
-waitInterval = 10 # sec
-maxacqCount = 1 # no. of files
-
+sample_size = 4000 # limit
+waitInterval = 5 # sec
+maxacqCount = 10 # no. of files
+maxreadcount = 5
 omz = serial.Serial(omz_addr, omz_br, timeout = omz_timeout)
 
 now = datetime.now()
@@ -42,18 +45,24 @@ mkdir(foldername)
 #################################################
 # definitions
 def runjson(payload):
-    if not omz.is_open:
-        omz.open()
-    # flush ?
-    omz.write(json.dumps(payload).encode())
-    time.sleep(wait_for_response)
-    replystr = b''
-    while(omz.in_waiting > 0):
-        replystr += omz.read()
-    omz.close()
-    replystr = replystr[replystr.find(b'{'):replystr.rfind(b'}')+1]
-    # print(replystr)
-    return json.loads(replystr.decode())
+    readcount = 0
+    while (readcount < maxreadcount):
+        try:
+            if not omz.is_open:
+                omz.open()
+            # flush ?
+            omz.write(json.dumps(payload).encode())
+            time.sleep(wait_for_response)
+            replystr = b''
+            while(omz.in_waiting > 0):
+                replystr += omz.read()
+            omz.close()
+            replystr = replystr[replystr.find(b'{'):replystr.rfind(b'}')+1]
+            # print(replystr)
+            return json.loads(replystr.decode())
+        except:
+            continue
+    return None
     
 runjson(
     {
@@ -84,10 +93,11 @@ def oscread(acqCount):
     # open port
     if not omz.is_open:
         omz.open()
+    omz.flush()
     # write
     omz.write(json.dumps(payload).encode())
     # wait for response
-    time.sleep(0.4)
+    time.sleep(wait_for_response)
 
     # read
     replystr = b''
@@ -95,103 +105,40 @@ def oscread(acqCount):
         buffer = omz.read(128)
         replystr += buffer
     omz.close()
-    #print(replystr)
+
     # Split
     result = re.split(b'\r\n',replystr)
+
+    # Check if you got data
+    if (len(result) < 3):
+        return [0, 0, len(result)]
+    
+    # json at index 1
+    reply_json_str = result[1]
+    # chop off right
+    reply_json_str = reply_json_str[reply_json_str.find(b'{'):reply_json_str.rfind(b'}')+1]
     # Decode bytes, and convert single quotes to double quotes for valid JSON
-    reply_json_str = result[1].decode('ASCII').replace("'", '"')
+    reply_json_str = reply_json_str.decode('ASCII').replace("'", '"')
+
+    # slice of incase of extra bytes attached
     reply_json = json.loads(reply_json_str)
+
+    # pp.pprint(reply_json)
     # Get parameters
     BinaryLength = reply_json['osc']['1'][0]['binaryLength']
     acqCount = reply_json['osc']['1'][0]['acqCount']
     sampleFreq = reply_json['osc']['1'][0]['actualSampleFreq']/1000
+    filename = "AC" + str(acqCount) + "SR" + str(oscfreq)
 
     # data's in the 3rd chunk apparently
     datastr = result[3]
-    return [BinaryLength, len(datastr), len(result)]
-
-def oscread2(acqCount):
-    [BinaryLength,ActualBinaryLength] = [0,0]
-    # write command
-    payload = {'osc': {'1': [{'command': 'read', 'acqCount': acqCount}]}}
-    
-    if not omz.is_open:
-        omz.open()
-    omz.write(json.dumps(payload).encode())
-    time.sleep(wait_for_response)
-
-    # Read header
-    # format : <number>\r\n
-    header = b''
-    while( omz.in_waiting > 0 ):
-        if( (len(header) > 2) & (header[-2:] == b'\r\n') ):
-            break
-        byte = omz.read()
-        header += byte
-    # print(header)
-
-    # read reply json
-    replystr = b''
-    leftBraceCount = 0
-    rightBraceCount = 0
-    # while( omz.in_waiting > 0 ):
-    while( ( leftBraceCount != rightBraceCount ) | (leftBraceCount == 0) ):
-        byte = omz.read()
-        if(byte == b'{'):
-            leftBraceCount += 1
-        if(byte == b'}'):
-            rightBraceCount += 1
-        replystr += byte
-    # print(replystr)
-    # Extract parameters
-    reply_json = json.loads(replystr)
-    BinaryLength = reply_json['osc']['1'][0]['binaryLength']
-    acqCount = reply_json['osc']['1'][0]['acqCount']
-    sampleFreq = reply_json['osc']['1'][0]['actualSampleFreq']/1000
-
-    # Read secondary header
-    # format : \r\n<number>\r\n
-    header2 = b''
-    return_count = 0
-    # while( omz.in_waiting > 0 ):
-    while (return_count != 2):
-        byte = omz.read()
-        if byte==b'\n':
-            return_count += 1
-        header2 += byte
-    # print(header2)
-
-    # read data
-    # <BinaryLength size blob>
-    datastr = b''
-    # while( omz.in_waiting > 0 ):
-    while(len(datastr) < BinaryLength):
-        datastr += omz.read()
-    # print(datastr)
-
-    # read footer
-    # format : \r\n<number>\r\n\r\n
-    footer = b''
-    return_count = 0
-    # while( omz.in_waiting > 0 ):
-    while (return_count != 3):
-        byte = omz.read()
-        if byte==b'\n':
-            return_count += 1
-        footer += byte
-    # print(footer)
-
-    # Close communications with COM port
-    omz.close()
-
-    filename = "AC" + str(acqCount) + "SR" + str(sampleFreq)
-
     # # write binary file and convert later
     with open(foldername + "/" + filename + ".bin", "wb") as file:
         for byte in datastr:
             file.write(byte.to_bytes(1, byteorder='big'))
     
-    return len(header)+len(header2)+len(datastr)+len(footer)
+    #return stats
+    return [BinaryLength, len(datastr), len(result)]
 
 # check states and acquisition counts   
 def check():
@@ -369,6 +316,7 @@ if testing:
 
 acqCount= 0
 while(acqCount < maxacqCount):
+    print('Acquisition #: ' + str(acqCount+1) + ' state: arming', end='')
     while (True):
         reply = runjson(
             {
@@ -383,27 +331,19 @@ while(acqCount < maxacqCount):
         )
         if(reply['trigger']['1'][0]['statusCode']==0):
             acqCount = reply['trigger']['1'][0]['acqCount']
-            printstatus('Trigger armed for acqCount = ' + str(acqCount))
+            print('\rAcquisition #: ' + str(acqCount) + ' state: armed     ', end='')
             break  
         else:
             # iterate
             time.sleep(0.5)
             continue
-    # Wait for osc to finish acq
-    time.sleep(sample_size/oscfreq)
-    # Check osc state 
+    
     while (True):
-        # Wait till osc is triggered.
+        # Check osc state 
         [awg_state,osc_state,trg_state,acqCount_osc,acqCount_trg] = check()
-        if(osc_state=='triggered'):
-            printstatus('Data for Acqition count '+ str(acqCount_trg) + '...reading')
-            totb = oscread(acqCount_trg)
-            print(totb)
-            break
-        if(osc_state=='acquiring'):
-            continue
-        else:
-            # iterate
+        # Wait till osc is triggered.
+        if(osc_state=='armed'):
+            # force trigger
             if force:
                 reply = runjson(
                     {
@@ -417,8 +357,45 @@ while(acqCount < maxacqCount):
                     }
                 )
             time.sleep(0.5)
+            continue
+
+        if(osc_state=='acquiring'):
+            # Wait for osc to finish acquiring
+            print('\rAcquisition #: ' + str(acqCount) + ' state: acquiring ', end='')
+            time.sleep(sample_size/oscfreq)
+            continue
+        
+        if(osc_state=='triggered'):
+            print('\rAcquisition #: ' + str(acqCount) + ' state: triggered ', end='')
+            break
+
+    # read loop
+    readcount = 0
+    errormsg = ''
+    while (readcount < maxreadcount):
+        try:
+            stats = oscread(acqCount_trg)
+            readcount+=1
+            if(stats[2] > 3):
+                print('\rAcquisition #: ' + str(acqCount) + ' state: saved ' + str(stats[1]*100/stats[0]) + '% data')
+                readcount = -1
+                break
+        except:
+            readcount = maxacqCount
+            filepath = foldername + '/' + 'AC' + str(acqCount) + 'SR' + str(oscfreq) + '.bin'
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            errormsg = str(sys.exc_info())
+            print('\rAcquisition #: ' + str(acqCount) + ' state: save failed. Exception: ' + errormsg)
+            break
+
+    # proces result
+    if(readcount != -1):
+        print('\rAcquisition #: ' + str(acqCount) + ' state: save failed. Read Count: ' + str(readcount) )
+        
     # Wait between two readings
-    time.sleep(waitInterval) 
+    if(acqCount < maxacqCount):
+        time.sleep(waitInterval) 
 
 ################################################
 # Reset device and end transmission
