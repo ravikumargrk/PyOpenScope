@@ -8,7 +8,7 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 ## OpenScope115200.hex
 * The standard baudrate this device uses is 1250000 but if usually devices have max baudrate of 115200 
 * For OpenScope to communicate with such devices, install this firmware 
-**PROCEED WITH CAUTION**
+* **PROCEED WITH CAUTION**
     * This is process is not reversible (same way as uploading firmware)
     * digilent-agent and wavesform live won't work as baud rate will be changed 
     * To reverse the process, see "Reverting to original firmware" below
