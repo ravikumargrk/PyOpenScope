@@ -6,7 +6,7 @@ This code could in RPi and the combo RPi+OpenScope becomes your own smart / auto
 You might want to read this before coding on top this repo : [Digilent Instrumentation Protocol](https://reference.digilentinc.com/reference/software/digilent-instrumentation-protocol/protocol)
 # Files
 ## OpenScope115200.hex
-* The standard baudrate this device uses is 1250000 but if usually devices have max baudrate of 115200 
+* The standard baudrate this device uses is 1250000 but usually devices have max baudrate of 115200 
 * For OpenScope to communicate with such devices, install this firmware 
 * **PROCEED WITH CAUTION**
     * This is process is not reversible (same way as uploading firmware)
