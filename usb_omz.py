@@ -385,7 +385,7 @@ while(acqCount < maxacqCount):
             elapsed = time.time() - t
             readcount+=1
             if(stats[2] > 3):
-                print('\rAcquisition #: ' + str(acqCount) + ' state: saved ' + str(stats[1]*100//stats[0]) + '% data | time : ' + str(round(elapsed,2)))
+                print('\rAcquisition #: ' + str(acqCount) + ' state: saved ' + str(stats[1]*100//stats[0]) + '% data | time : ' + str(round(elapsed,2)) + ' sec')
                 readcount = -1
                 break
         except:

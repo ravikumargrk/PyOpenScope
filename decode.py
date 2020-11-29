@@ -69,7 +69,7 @@ import os
 allfolders = [name for name in os.listdir() if os.path.isdir(name)]
 datafolders = [name for name in allfolders if name.startswith('data_')]
 
-print('foldername\tfilename\tdata')
+print('foldername\t\tfilename\tdata')
 
 for folder in datafolders:
    datafiles = [name for name in os.listdir(folder) if name.endswith('.bin')]
