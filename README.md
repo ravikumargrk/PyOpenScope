@@ -8,7 +8,8 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 ## OpenScope115200.hex
 * The standard baudrate this device uses is 1250000 but if usually devices have max baudrate of 115200 
 * For OpenScope to communicate with such devices, install this firmware
-Steps : 
+> Procedure : 
+
 > Download this file, Hold BTNP and press BTNR on device to go into bootloader mode
 
 > Follow [This tutorial](https://reference.digilentinc.com/learn/instrumentation/tutorials/openscope-mz/update-firmware) and in "Available Firmware Versions" Select option "Others" to browse and pick downloaded file.
