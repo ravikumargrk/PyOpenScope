@@ -17,16 +17,18 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 ```
 1. Hold BTNP and press BTNR on device to go into bootloader mode
 2. Download OpenScope115200.hex 
-2. Follow [This tutorial](https://reference.digilentinc.com/learn/instrumentation/tutorials/openscope-mz/update-firmware)
-3. While step#2 In "Available Firmware Versions" Select option "Others" to browse and pick downloaded file.
+3. Follow Update OpenScopeMZ firmware (link below)
+4. While step#2 In "Available Firmware Versions" Select option "Others" to browse and pick downloaded file.
 ```
+[Update OpenScopeMZ firmware](https://reference.digilentinc.com/learn/instrumentation/tutorials/openscope-mz/update-firmware)
 **Revert to Original Firmware**
 ```
 0. Install Arduino 1.6.9
-1. Follow instrunctions at [Digilent/openscope-mz](https://github.com/Digilent/openscope-mz) markdown file
+1. Follow instrunctions at OpenScopeMZ source code github repository markdown 
+(link to repo given below)
 2. Don't forget to put device in bootloader mode before arduino upload !
 ```
-
+[Digilent/openscope-mz](https://github.com/Digilent/openscope-mz)
 ## usb_omz.py 
 * Sets up parameters like sampling rate, sample size and number of acquisitions to be done and wait interval between the acquisitions
 * Script takes maxacqCount number of acuisition in different files and saves it as CSV files.
