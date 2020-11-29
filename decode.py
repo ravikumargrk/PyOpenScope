@@ -3,6 +3,10 @@
 import csv
 import json
 
+##################################
+####       Definition         ####
+##################################
+
 def bin2dat(foldername,filename):
    try:
       fileobj = open(foldername + '/' + filename,'rb')
@@ -29,8 +33,9 @@ def bin2dat(foldername,filename):
       writer.writerows(data)
 
    print(foldername+'\t'+filename+'\t'+str(len(data)))
+
 ##################################
-####   JSON File Saving ####
+####     JSON File Saving     ####
 ##################################
    # dataset = {
    #    'name':filename,
@@ -54,6 +59,10 @@ def bin2dat(foldername,filename):
    #    json.dump(chart, jsonfile, indent=4, sort_keys=True)
 
    # jsonfile.close()
+
+##################################
+####        Main Loop         ####
+##################################
 
 # Automate pick recent directory
 import os

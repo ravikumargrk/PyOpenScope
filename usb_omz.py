@@ -1,3 +1,8 @@
+#########################################################
+#  Author : Ravi Kumar https://github.com/ravikumargrk  #
+#  Code to automate data acquisition from openscope     #
+#########################################################
+
 #!/bin/bash/python3
 # -*- coding: utf-8 -*-
 from os import mkdir

@@ -5,7 +5,7 @@ This code could in RPi and the combo RPi+OpenScope becomes your own smart / auto
 
 You might want to read this before coding on top this repo : [Digilent Instrumentation Protocol](https://reference.digilentinc.com/reference/software/digilent-instrumentation-protocol/protocol)
 # Files
-## driver.py 
-* Sets up parameters like sampling rate, sample size and number of acquisitins to be done and wait interval between the acquisitions
+## usb_omz.py 
+* Sets up parameters like sampling rate, sample size and number of acquisitions to be done and wait interval between the acquisitions
 * Script takes maxacqCount number of acuisition in different files and saves it as CSV files.
 
