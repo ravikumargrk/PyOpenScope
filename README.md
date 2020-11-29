@@ -19,4 +19,4 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 * Decodes bin files to csv format
 ## Problems
 * Sadly Digilent Openscope has been discontinued. 
-* At high sample size, I observed that only 90% is data collected and there is a loss while reading data from serial input. This problem might be solved by placing right serial object parameters. [Forum Question](https://forum.digilentinc.com/topic/20989-oscilloscope-read-fails-at-high-sample-sizes-greater-than-~3900-samples/)
+* At high sample size, I observed that only 90% is data collected and there is a data loss while reading data from serial input. This problem might be solved by placing right serial object parameters. [Forum Question](https://forum.digilentinc.com/topic/20989-oscilloscope-read-fails-at-high-sample-sizes-greater-than-~3900-samples/)
