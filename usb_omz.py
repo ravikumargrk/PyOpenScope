@@ -380,10 +380,12 @@ while(acqCount < maxacqCount):
     errormsg = ''
     while (readcount < maxreadcount):
         try:
+            t = time.time()
             stats = oscread(acqCount_trg)
+            elapsed = time.time() - t
             readcount+=1
             if(stats[2] > 3):
-                print('\rAcquisition #: ' + str(acqCount) + ' state: saved ' + str(stats[1]*100//stats[0]) + '% data')
+                print('\rAcquisition #: ' + str(acqCount) + ' state: saved ' + str(stats[1]*100//stats[0]) + '% data | time : ' + str(round(elapsed,2)))
                 readcount = -1
                 break
         except:
