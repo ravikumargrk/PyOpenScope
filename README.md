@@ -1,5 +1,5 @@
 # About
-A smart DAQ. Python (3.8) code that runs on your PC or RPi, interacts with OpenScope MZ (by digilent) over WiFi to automate the process of collecting data from openscope
+Python (3.8) code that runs on your PC or RPi, interacts with OpenScope MZ (by digilent) over WiFi to automate the process of collecting data from openscope
 
 This code could in RPi and the combo RPi+OpenScope becomes your own smart / automated oscilloscope / Data Acquisition System.
 
