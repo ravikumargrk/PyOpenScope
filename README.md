@@ -40,3 +40,4 @@ You might want to read this before coding on top this repo : [Digilent Instrumen
 ## Problems
 * Sadly Digilent Openscope has been discontinued. 
 * At high sample size, I observed that only 90% is data collected and there is a data loss while reading data from serial input. This problem might be solved by placing right serial object parameters. [Forum Question](https://forum.digilentinc.com/topic/20989-oscilloscope-read-fails-at-high-sample-sizes-greater-than-~3900-samples/)
+* For RaspberryPi 4B, When openscope is connected to USB of Pi, At 115200 baudrate, 4096 buffer size, 2 seconds timeout and 1 sec wait time between serial write and serial read, you would get 89% to 90% data for total sampling size of 30,000 points. 
