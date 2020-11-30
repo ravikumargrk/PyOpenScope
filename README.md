@@ -1,7 +1,7 @@
 # About
 Python (3.8) code that runs on your PC or RPi, interacts with [OpenScope MZ](https://reference.digilentinc.com/reference/instrumentation/openscope-mz/start) (by digilent) over WiFi to automate the process of collecting data from openscope
 
-This code could in RPi and the combo RPi+OpenScope becomes your own smart / automated oscilloscope / Data Acquisition System.
+This code could run in RPi and the combo RPi+OpenScope becomes your own smart / automated oscilloscope / Data Acquisition System.
 
 You might want to read this before coding on top this repo : [Digilent Instrumentation Protocol](https://reference.digilentinc.com/reference/software/digilent-instrumentation-protocol/protocol)
 # Files
