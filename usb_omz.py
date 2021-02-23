@@ -25,7 +25,7 @@ omz_timeout = 2
 buffersize = 4096
 
 # boolean
-force = True
+force = False
 indicate_status = False
 testing = True
 awgfreq = 100 # Hz
